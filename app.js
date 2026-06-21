@@ -3,6 +3,7 @@ if (location.protocol === "file:") {
 }
 
 const API_BASE = "";
+const STATIC_MODE = location.hostname.endsWith("github.io") || location.search.includes("static=1");
 
 const state = {
   user: null,
@@ -71,6 +72,317 @@ const headerConfig = {
   },
 };
 
+const staticDefaults = {
+  profile: {
+    account_name: "职场效率研究所",
+    niche: "职场效率 / AI 工具 / 普通人副业",
+    audience: "25-35 岁职场人，想提升效率和收入",
+    goal: "涨粉",
+    tone: "实用、直接、有案例、有步骤",
+    advantage: "懂 AI 工具，也能把方法拆成普通人能执行的步骤",
+    avoidance: "不做空泛鸡汤，不堆工具名，不做夸张收益承诺。",
+  },
+  topics: [
+    {
+      id: "topic-1",
+      title: "普通职场人如何用 AI 把周报从 1 小时压到 10 分钟",
+      category: "工具教程",
+      source: "方向推荐",
+      reason: "明确节省时间，痛点高频，适合做步骤型短视频。",
+      reference: "强调效率收益和可复制模板。",
+      score: 92,
+    },
+    {
+      id: "topic-2",
+      title: "我用 3 个提示词做完竞品分析，老板以为我加班到半夜",
+      category: "经验故事",
+      source: "抖音参考",
+      reason: "故事钩子强，能强化懂工具、能落地的人设。",
+      reference: "参考职场反差型开头。",
+      score: 89,
+    },
+    {
+      id: "topic-3",
+      title: "AI 工具很多，但真正能涨粉的内容结构只有这 4 种",
+      category: "痛点解决",
+      source: "手动添加",
+      reason: "面向博主焦虑，容易引导收藏和评论。",
+      reference: "适合做系列内容入口。",
+      score: 87,
+    },
+  ],
+  directions: [
+    {
+      id: "direction-1",
+      category: "痛点解决",
+      title: "把低效工作拆成可复制流程",
+      angle: "围绕用户每天都在浪费时间的场景，给出 3-5 个可立即套用的步骤。",
+      formats: ["清单", "模板", "前后对比"],
+    },
+    {
+      id: "direction-2",
+      category: "经验故事",
+      title: "用个人经历建立可信人设",
+      angle: "把真实工作场景改写成故事，突出你如何用方法解决一个具体问题。",
+      formats: ["反差开头", "过程复盘", "结果展示"],
+    },
+    {
+      id: "direction-3",
+      category: "工具教程",
+      title: "把 AI 工具讲成普通人能用的方法",
+      angle: "少讲工具名，多讲场景、提示词、操作顺序和结果截图。",
+      formats: ["教程", "演示", "避坑"],
+    },
+    {
+      id: "direction-4",
+      category: "转化销售",
+      title: "用资料包或咨询承接高意向用户",
+      angle: "从免费方法过渡到模板、陪跑、咨询或社群，避免硬广感。",
+      formats: ["案例", "领取资料", "问题诊断"],
+    },
+  ],
+  hotReferences: [
+    {
+      id: "hot-1",
+      platform: "抖音",
+      title: "打工人用 AI 偷偷变强的 6 个工作流",
+      views: "218.6 万",
+      followers: "2.8 万",
+      category: "工具教程",
+      reason: "标题有身份代入和结果暗示，内容结构适合拆成系列。",
+      rewrite: "普通职场人用 AI 提升工作效率的 6 个工作流",
+    },
+    {
+      id: "hot-2",
+      platform: "抖音",
+      title: "别再瞎做账号了，先想清楚这 4 个定位问题",
+      views: "96.4 万",
+      followers: "1.1 万",
+      category: "痛点解决",
+      reason: "直接戳中账号迷茫，适合引导用户评论自己的赛道。",
+      rewrite: "普通人做个人 IP，先确认这 4 个定位问题",
+    },
+    {
+      id: "hot-3",
+      platform: "抖音",
+      title: "我靠一套选题表，把更新频率从每周 2 条提到每天 1 条",
+      views: "74.2 万",
+      followers: "8600",
+      category: "经验故事",
+      reason: "过程和结果都具体，能自然展示工具价值。",
+      rewrite: "内容生产慢的人，先搭一张能持续更新的选题表",
+    },
+    {
+      id: "hot-4",
+      platform: "抖音",
+      title: "账号没有记忆点？这 3 句话帮你定人设",
+      views: "63.8 万",
+      followers: "7200",
+      category: "人设定位",
+      reason: "适合做定位入口，能让用户保存并二次传播。",
+      rewrite: "个人 IP 没记忆点，用这 3 句话重新定义人设",
+    },
+  ],
+};
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function loadStaticStore() {
+  const saved = localStorage.getItem("ipzhinao_static_store");
+  if (saved) return JSON.parse(saved);
+  return {
+    user: { email: "静态测试用户", is_guest: true },
+    profile: clone(staticDefaults.profile),
+    topics: clone(staticDefaults.topics),
+    style_sample_count: 0,
+    subscription: { plan: "free", status: "trial", price: 0 },
+    usage_count: 0,
+  };
+}
+
+function saveStaticStore(store) {
+  localStorage.setItem("ipzhinao_static_store", JSON.stringify(store));
+}
+
+function staticUsage(store) {
+  const limit = 3;
+  const isPaid = store.subscription?.status === "pending_payment_provider";
+  return { limit, used: store.usage_count, remaining: Math.max(0, limit - store.usage_count), is_paid: isPaid };
+}
+
+function consumeStaticUsage(store) {
+  const usage = staticUsage(store);
+  if (!usage.is_paid && usage.remaining <= 0) {
+    const error = new Error("静态测试版已用完 3 次 AI 额度，点击订阅可继续模拟体验。");
+    error.data = { usage };
+    throw error;
+  }
+  if (!usage.is_paid) store.usage_count += 1;
+}
+
+function staticScript(topic, format) {
+  const profile = loadStaticStore().profile;
+  return `标题：${topic.title}
+
+开头 3 秒：
+如果你是${profile.audience}，现在还在为「${topic.category}」反复卡住，先别急着继续刷教程。
+
+正文结构：
+1. 先指出一个具体场景：${topic.reason}
+2. 给出一个能马上执行的方法，把问题拆成 3 个动作。
+3. 用你的经历或案例补一句可信度：${profile.advantage}
+
+口播草稿：
+很多人做内容慢，不是不会写，而是每次都从零开始想。
+我的建议是先建一个选题池，把赛道、受众、爆款参考和自己的旧文案都放进去。
+比如这个选题「${topic.title}」，就可以按“痛点-方法-案例-行动”的结构来拍。
+第一段只讲用户现在最烦的卡点，第二段给 3 个步骤，第三段展示你自己怎么用过。
+最后提醒用户：如果你也想要这套选题表，可以在评论区留下你的赛道。
+
+结尾：
+关注我，下一条我会把这个方法拆成可以直接套用的模板。
+
+格式：${format}`;
+}
+
+function staticDouyinReview(account, rawData) {
+  const source = rawData ? "已根据你粘贴的抖音数据生成模拟复盘。" : "当前使用演示数据生成复盘，正式版可接入真实数据。";
+  return {
+    ok: true,
+    account: account || "@职场效率研究所",
+    status: source,
+    metrics: [
+      { label: "总播放", value: "51.8 万" },
+      { label: "新增粉丝", value: "4,600" },
+      { label: "平均完播", value: "35%" },
+      { label: "内容收入", value: "¥1,056" },
+    ],
+    videos: [
+      {
+        title: "普通人用 AI 写周报，10 分钟出一版",
+        views: 186000,
+        followers: 1280,
+        completion: 36,
+        engagement: 7.8,
+        suggestion: "保留具体时间收益，下一条扩展到会议纪要或复盘模板。",
+      },
+      {
+        title: "别再收藏工具清单，先搭自己的工作流",
+        views: 94200,
+        followers: 860,
+        completion: 41,
+        engagement: 9.4,
+        suggestion: "互动高，适合把评论里的工作场景整理成 3 条新选题。",
+      },
+      {
+        title: "3 个提示词做完竞品分析",
+        views: 238000,
+        followers: 2460,
+        completion: 29,
+        engagement: 6.1,
+        suggestion: "播放高但完播偏低，下一版要把结果展示提前到前 5 秒。",
+      },
+    ],
+    diagnosis: [
+      { title: "涨粉来源", copy: "最能带粉的是工具教程类内容，建议连续做 3 条同结构选题。" },
+      { title: "内容优化", copy: "完播偏低的视频要把结果展示提前，减少铺垫。" },
+      { title: "下一轮建议", copy: "优先测试 AI 工作流、选题系统、个人 IP 定位三个方向。" },
+    ],
+  };
+}
+
+async function staticApi(path, options = {}) {
+  const store = loadStaticStore();
+  const body = options.body && typeof options.body === "string" ? JSON.parse(options.body) : options.body || {};
+  const method = options.method || "GET";
+
+  if (path === "/api/bootstrap") {
+    return {
+      user: store.user,
+      profile: store.profile,
+      topics: store.topics,
+      style_sample_count: store.style_sample_count,
+      subscription: store.subscription,
+      usage: staticUsage(store),
+      directions: clone(staticDefaults.directions),
+      hot_references: clone(staticDefaults.hotReferences),
+      ai_provider: "static-demo",
+    };
+  }
+  if (path === "/api/profile" && method === "PUT") {
+    store.profile = body;
+    saveStaticStore(store);
+    return { ok: true, profile: store.profile };
+  }
+  if (path === "/api/topics" && method === "POST") {
+    const existing = store.topics.find((topic) => topic.title === body.title);
+    if (existing) return { ok: true, topic: existing, duplicate: true };
+    const topic = { id: `topic-${Date.now()}`, score: 84, ...body };
+    store.topics.unshift(topic);
+    saveStaticStore(store);
+    return { ok: true, topic };
+  }
+  if (path.startsWith("/api/topics?") && method === "DELETE") {
+    const id = new URLSearchParams(path.split("?")[1]).get("id");
+    store.topics = store.topics.filter((topic) => topic.id !== id);
+    saveStaticStore(store);
+    return { ok: true };
+  }
+  if (path === "/api/generate-script") {
+    consumeStaticUsage(store);
+    const topic = store.topics.find((item) => item.id === body.topic_id) || store.topics[0];
+    saveStaticStore(store);
+    return { ok: true, script: staticScript(topic, body.format || "短视频口播"), usage: staticUsage(store) };
+  }
+  if (path === "/api/style-samples" && method === "POST") {
+    store.style_sample_count += 1;
+    saveStaticStore(store);
+    return { ok: true, style_sample_count: store.style_sample_count };
+  }
+  if (path === "/api/analyze-content") {
+    consumeStaticUsage(store);
+    store.style_sample_count += 1;
+    saveStaticStore(store);
+    return {
+      ok: true,
+      style_sample_count: store.style_sample_count,
+      usage: staticUsage(store),
+      insights: [
+        { label: "表达风格", title: "结构清楚，适合做方法型内容", copy: "内容更适合保留真实场景和步骤，而不是堆概念。" },
+        { label: "可复用结构", title: "痛点 - 方法 - 案例 - 行动", copy: "后续选题可以沿用这个结构做系列化。" },
+      ],
+      candidates: [
+        { title: "把一篇旧文案拆成 5 条短视频选题", category: "内容复用", reason: "用户已经有内容资产，适合测试复用效率。" },
+        { title: "普通人做个人 IP，先搭自己的表达素材库", category: "人设定位", reason: "能承接历史文案导入功能。" },
+      ],
+    };
+  }
+  if (path === "/api/douyin/sync") {
+    consumeStaticUsage(store);
+    const review = staticDouyinReview(body.account, body.raw_data);
+    saveStaticStore(store);
+    return { ...review, usage: staticUsage(store) };
+  }
+  if (path === "/api/checkout") {
+    store.subscription = { plan: "creator-monthly", status: "pending_payment_provider", price: 9.9 };
+    saveStaticStore(store);
+    return { ok: true, message: "静态测试版已模拟订阅成功；正式版会接微信/支付宝。", subscription: store.subscription };
+  }
+  if (path === "/api/auth/register" || path === "/api/auth/login") {
+    store.user = { email: body.email || "test@ipzhinao.cn", is_guest: false };
+    saveStaticStore(store);
+    return { ok: true, user: store.user };
+  }
+  if (path === "/api/auth/logout") {
+    store.user = { email: "静态测试用户", is_guest: true };
+    saveStaticStore(store);
+    return { ok: true };
+  }
+  throw new Error("静态测试模式暂不支持这个操作");
+}
+
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -92,6 +404,7 @@ async function api(path, options = {}) {
   if (init.body && typeof init.body !== "string") {
     init.body = JSON.stringify(init.body);
   }
+  if (STATIC_MODE) return staticApi(path, init);
   const response = await fetch(`${API_BASE}${path}`, init);
   const data = await response.json();
   if (!response.ok) {
@@ -565,7 +878,7 @@ async function bootstrap() {
     applyProfile(data.profile);
     renderAll();
     updateHeader("dashboard");
-    setMessage(state.user.is_guest ? "访客数据已保存到本机服务" : "已登录");
+    setMessage(state.user.is_guest ? (STATIC_MODE ? "静态测试数据会保存在当前浏览器" : "访客数据已保存到本机服务") : "已登录");
   } catch (error) {
     $("#authStatus").textContent = "未连接服务";
     setMessage("请通过本地服务地址打开页面", true);
