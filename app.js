@@ -4,6 +4,9 @@ if (location.protocol === "file:") {
 
 const API_BASE = "";
 const STATIC_MODE = location.hostname.endsWith("github.io") || location.search.includes("static=1");
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get("ai")) localStorage.setItem("ipzhinao_ai_api", urlParams.get("ai"));
+const AI_API_BASE = localStorage.getItem("ipzhinao_ai_api") || "";
 
 const state = {
   user: null,
@@ -16,6 +19,7 @@ const state = {
   hotReferences: [],
   importedCandidates: [],
   douyinReview: null,
+  aiFeedback: null,
   usage: null,
   aiProvider: "template",
 };
@@ -198,6 +202,9 @@ function loadStaticStore() {
     topics: clone(staticDefaults.topics),
     style_sample_count: 0,
     subscription: { plan: "free", status: "trial", price: 0 },
+    ai_feedback: null,
+    directions: null,
+    hot_references: null,
     usage_count: 0,
   };
 }
@@ -293,6 +300,58 @@ function staticDouyinReview(account, rawData) {
   };
 }
 
+function localProfileFeedback(profile) {
+  return {
+    summary: `这个账号适合用「${profile.niche}」里的具体场景切入，先解决${profile.audience}最频繁、最愿意收藏的问题，再逐步建立${profile.goal}所需的信任感。`,
+    items: [
+      {
+        label: "定位判断",
+        title: "方向成立，但要避免只讲大概念",
+        copy: `受众已经比较清楚，下一步要把「${profile.niche}」拆成每天都会遇到的具体问题。`,
+      },
+      {
+        label: "优先受众",
+        title: profile.audience,
+        copy: "内容开头要让这类人马上觉得“这就是我现在的情况”，不要先介绍工具或方法论。",
+      },
+      {
+        label: "内容策略",
+        title: "先做痛点解决，再做人设故事",
+        copy: `为了${profile.goal}，前 10 条内容建议用 70% 方法教程 + 30% 个人经验。`,
+      },
+      {
+        label: "风险提醒",
+        title: "不要承诺过猛",
+        copy: profile.avoidance || "避免夸张收益、万能方法和空泛鸡汤。",
+      },
+    ],
+  };
+}
+
+function localDirections(profile) {
+  return staticDefaults.directions.map((item) => ({
+    ...item,
+    angle: `${item.angle} 重点围绕「${profile.audience}」在「${profile.niche}」里的真实场景展开。`,
+  }));
+}
+
+async function callAi(path, payload) {
+  if (!AI_API_BASE) return null;
+  try {
+    const response = await fetch(`${AI_API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`AI 服务暂时不可用：${response.status}`);
+    const data = await response.json();
+    return data.ok === false ? null : data;
+  } catch (error) {
+    console.warn("AI fallback:", error);
+    return null;
+  }
+}
+
 async function staticApi(path, options = {}) {
   const store = loadStaticStore();
   const body = options.body && typeof options.body === "string" ? JSON.parse(options.body) : options.body || {};
@@ -306,15 +365,27 @@ async function staticApi(path, options = {}) {
       style_sample_count: store.style_sample_count,
       subscription: store.subscription,
       usage: staticUsage(store),
-      directions: clone(staticDefaults.directions),
-      hot_references: clone(staticDefaults.hotReferences),
-      ai_provider: "static-demo",
+      directions: store.directions || clone(staticDefaults.directions),
+      hot_references: store.hot_references || clone(staticDefaults.hotReferences),
+      ai_feedback: store.ai_feedback,
+      ai_provider: AI_API_BASE ? "deepseek-worker" : "static-demo",
     };
   }
   if (path === "/api/profile" && method === "PUT") {
     store.profile = body;
+    const ai = await callAi("/api/profile", { profile: body, topics: store.topics });
+    store.ai_feedback = ai?.feedback || localProfileFeedback(body);
+    store.directions = ai?.directions?.length ? ai.directions : localDirections(body);
+    store.hot_references = ai?.hot_references?.length ? ai.hot_references : staticDefaults.hotReferences;
     saveStaticStore(store);
-    return { ok: true, profile: store.profile };
+    return {
+      ok: true,
+      profile: store.profile,
+      ai_feedback: store.ai_feedback,
+      directions: store.directions,
+      hot_references: store.hot_references,
+      ai_provider: ai ? "deepseek-worker" : "static-demo",
+    };
   }
   if (path === "/api/topics" && method === "POST") {
     const existing = store.topics.find((topic) => topic.title === body.title);
@@ -333,8 +404,14 @@ async function staticApi(path, options = {}) {
   if (path === "/api/generate-script") {
     consumeStaticUsage(store);
     const topic = store.topics.find((item) => item.id === body.topic_id) || store.topics[0];
+    const ai = await callAi("/api/generate-script", {
+      profile: store.profile,
+      topic,
+      topics: store.topics,
+      format: body.format || "短视频口播稿",
+    });
     saveStaticStore(store);
-    return { ok: true, script: staticScript(topic, body.format || "短视频口播"), usage: staticUsage(store) };
+    return { ok: true, script: ai?.script || staticScript(topic, body.format || "短视频口播"), usage: staticUsage(store) };
   }
   if (path === "/api/style-samples" && method === "POST") {
     store.style_sample_count += 1;
@@ -344,7 +421,17 @@ async function staticApi(path, options = {}) {
   if (path === "/api/analyze-content") {
     consumeStaticUsage(store);
     store.style_sample_count += 1;
+    const ai = await callAi("/api/analyze-content", { profile: store.profile, content: body.content, topics: store.topics });
     saveStaticStore(store);
+    if (ai?.insights?.length) {
+      return {
+        ok: true,
+        style_sample_count: store.style_sample_count,
+        usage: staticUsage(store),
+        insights: ai.insights,
+        candidates: ai.candidates || [],
+      };
+    }
     return {
       ok: true,
       style_sample_count: store.style_sample_count,
@@ -361,7 +448,13 @@ async function staticApi(path, options = {}) {
   }
   if (path === "/api/douyin/sync") {
     consumeStaticUsage(store);
-    const review = staticDouyinReview(body.account, body.raw_data);
+    const ai = await callAi("/api/douyin/sync", {
+      profile: store.profile,
+      account: body.account,
+      raw_data: body.raw_data,
+      topics: store.topics,
+    });
+    const review = ai?.review || staticDouyinReview(body.account, body.raw_data);
     saveStaticStore(store);
     return { ...review, usage: staticUsage(store) };
   }
@@ -483,6 +576,30 @@ function renderProfileSummary() {
           <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(value)}</strong>
         </div>
+      `,
+    )
+    .join("");
+}
+
+function renderAiFeedback() {
+  const feedback = state.aiFeedback;
+  if (!feedback) {
+    $("#aiFeedbackStatus").textContent = "等待定位";
+    $("#aiFeedbackSummary").textContent =
+      "填完赛道、受众和目标后，IP智脑会判断这个账号应该怎么切入、先做什么内容、哪些表达要避开。";
+    $("#aiFeedbackList").innerHTML = "";
+    return;
+  }
+  $("#aiFeedbackStatus").textContent = state.aiProvider === "deepseek-worker" ? "AI 已分析" : "测试反馈";
+  $("#aiFeedbackSummary").textContent = feedback.summary || "已根据当前 IP 档案生成定位建议。";
+  $("#aiFeedbackList").innerHTML = (feedback.items || [])
+    .map(
+      (item) => `
+        <article>
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p>${escapeHtml(item.copy)}</p>
+        </article>
       `,
     )
     .join("");
@@ -646,9 +763,15 @@ async function deleteTopic(id) {
 }
 
 async function saveProfile() {
+  setMessage(AI_API_BASE ? "正在让 AI 分析定位..." : "正在生成定位反馈...");
   const data = await api("/api/profile", { method: "PUT", body: getProfile() });
   applyProfile(data.profile);
+  state.aiFeedback = data.ai_feedback || state.aiFeedback;
+  state.directions = data.directions || state.directions;
+  state.hotReferences = data.hot_references || state.hotReferences;
+  state.aiProvider = data.ai_provider || state.aiProvider;
   renderAll();
+  setMessage(state.aiProvider === "deepseek-worker" ? "AI 已完成定位反馈和选题推荐" : "已生成测试版定位反馈");
 }
 
 async function renderWriter(seedScript = false) {
@@ -854,6 +977,7 @@ async function handleHeaderAction(viewId) {
 function renderAll() {
   renderAuth();
   renderProfileSummary();
+  renderAiFeedback();
   renderDirections();
   renderHotReferences();
   renderTopics();
@@ -873,6 +997,7 @@ async function bootstrap() {
     state.subscription = data.subscription;
     state.usage = data.usage;
     state.aiProvider = data.ai_provider || "template";
+    state.aiFeedback = data.ai_feedback || null;
     state.directions = data.directions || [];
     state.hotReferences = data.hot_references || [];
     applyProfile(data.profile);
@@ -981,9 +1106,13 @@ function bindEvents() {
     }
   });
 
-  $("#refreshRecommendationsBtn").addEventListener("click", () => {
-    renderDirections();
-    setMessage("推荐已刷新");
+  $("#refreshRecommendationsBtn").addEventListener("click", async () => {
+    try {
+      await saveProfile();
+      showView("discover");
+    } catch (error) {
+      handleError(error);
+    }
   });
 
   $("#addManualTopicBtn").addEventListener("click", async () => {
