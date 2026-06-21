@@ -13,7 +13,7 @@
 
 内测地址：
 
-https://tricky-pugs-look.loca.lt
+https://chiqing426-glitch.github.io/ipzhinao/
 
 内测说明：
 
