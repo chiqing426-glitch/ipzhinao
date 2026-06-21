@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IP智脑</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">IP</div>
+          <div>
+            <strong>IP智脑</strong>
+            <span>自媒体 IP 内容工作台</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="主导航">
+          <button class="nav-item active" data-view="dashboard">流程总览</button>
+          <button class="nav-item" data-view="profile">IP 定位</button>
+          <button class="nav-item" data-view="discover">选题推荐</button>
+          <button class="nav-item" data-view="pool">选题池</button>
+          <button class="nav-item" data-view="writer">文案工坊</button>
+          <button class="nav-item" data-view="analytics">数据复盘</button>
+          <button class="nav-item" data-view="billing">订阅</button>
+        </nav>
+
+        <div class="account-box">
+          <span>账号</span>
+          <strong id="authStatus">正在连接</strong>
+          <input id="authEmail" type="email" placeholder="邮箱" />
+          <input id="authPassword" type="password" placeholder="密码" />
+          <div class="account-actions">
+            <button class="mini-button" id="loginBtn">登录</button>
+            <button class="mini-button" id="registerBtn">注册</button>
+            <button class="mini-button quiet" id="logoutBtn">退出</button>
+          </div>
+          <p id="authMessage"></p>
+        </div>
+
+        <div class="side-progress">
+          <span>今日流程</span>
+          <strong id="sideProgressTitle">正在确认账号定位</strong>
+          <div class="progress-track"><span id="sideProgressBar"></span></div>
+          <p id="sideProgressCopy">完成档案后，系统会给出选题方向和爆款参考。</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="headerEyebrow">个人 IP 内容系统</p>
+            <h1 id="headerTitle">从定位到成稿，把内容生产变成一条清楚的工作流</h1>
+            <p class="header-subtitle" id="headerSubtitle">先建立账号定位，再把推荐、爆款、历史文案沉淀成可持续复用的内容资产。</p>
+          </div>
+          <button class="primary-action" id="headerAction" data-go="profile">开始定位</button>
+        </header>
+
+        <section class="view active" id="dashboard">
+          <section class="guide-band">
+            <div class="guide-copy">
+              <p class="eyebrow">你可以用它完成什么</p>
+              <h2>先确认账号方向，再筛选爆款选题，最后沉淀成你的文案风格。</h2>
+              <p>
+                这不是一次性生成器，而是帮助博主持续积累选题池、风格样本和可复用脚本的内容工作台。
+              </p>
+              <div class="action-row">
+                <button class="primary-action" data-go="profile">填写 IP 档案</button>
+                <button class="ghost-action" data-go="discover">查看选题推荐</button>
+              </div>
+            </div>
+            <div class="flow-preview" aria-label="流程概览">
+              <article>
+                <span>01</span>
+                <strong>确认赛道</strong>
+                <p>账号领域、目标群体、阶段目标</p>
+              </article>
+              <article>
+                <span>02</span>
+                <strong>推荐选题</strong>
+                <p>按定位生成方向和抖音爆款参考</p>
+              </article>
+              <article>
+                <span>03</span>
+                <strong>加入选题池</strong>
+                <p>用户选择感兴趣的选题沉淀下来</p>
+              </article>
+              <article>
+                <span>04</span>
+                <strong>生成并编辑</strong>
+                <p>参考选题池和风格，拓展完整文案</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="dashboard-grid">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">当前工作流</p>
+                  <h2>建议从 IP 定位开始</h2>
+                </div>
+              </div>
+              <ol class="workflow-list">
+                <li class="done">
+                  <span>1</span>
+                  <div>
+                    <strong>建立 IP 档案</strong>
+                    <p id="workflowProfile">职场效率研究所，面向想提升效率和收入的职场人。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>2</span>
+                  <div>
+                    <strong>筛选推荐选题</strong>
+                    <p>从方向推荐和抖音爆款里选择值得拍的内容。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>3</span>
+                  <div>
+                    <strong>进入选题池</strong>
+                    <p>选题池会成为后续文案生成的长期上下文。</p>
+                  </div>
+                </li>
+                <li>
+                  <span>4</span>
+                  <div>
+                    <strong>生成完整文案</strong>
+                    <p>脚本会参考用户定位、历史选题和保存过的表达风格。</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="panel asset-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">内容资产</p>
+                  <h2>本周积累</h2>
+                </div>
+              </div>
+              <div class="asset-grid">
+                <div>
+                  <span>入池选题</span>
+                  <strong id="topicCount">3</strong>
+                </div>
+                <div>
+                  <span>可生成脚本</span>
+                  <strong id="scriptReadyCount">3</strong>
+                </div>
+                <div>
+                  <span>风格样本</span>
+                  <strong id="styleSampleCount">0</strong>
+                </div>
+                <div>
+                  <span>推荐方向</span>
+                  <strong id="directionCount">4</strong>
+                </div>
+              </div>
+              <div class="next-step">
+                <strong>下一步</strong>
+                <p id="nextStepCopy">先保存一次 IP 档案，再进入推荐区选择你想拍的方向。</p>
+                <button class="ghost-action" data-go="profile">去完善定位</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="profile">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Step 01</p>
+                <h2>确认赛道、目标群体和账号目标</h2>
+              </div>
+              <button class="primary-action" id="saveProfileBtn">保存并生成推荐</button>
+            </div>
+            <div class="form-grid">
+              <label>
+                账号名称
+                <input id="accountName" value="职场效率研究所" />
+              </label>
+              <label>
+                内容赛道
+                <input id="niche" value="职场效率 / AI 工具 / 普通人副业" />
+              </label>
+              <label>
+                目标群体
+                <input id="audience" value="25-35 岁职场人，想提升效率和收入" />
+              </label>
+              <label>
+                当前目标
+                <select id="goal">
+                  <option>涨粉</option>
+                  <option>引流咨询</option>
+                  <option>卖课/社群转化</option>
+                  <option>提升发布频率</option>
+                  <option>打造专家感</option>
+                </select>
+              </label>
+              <label>
+                内容风格
+                <input id="tone" value="实用、直接、有案例、有步骤" />
+              </label>
+              <label>
+                可展示优势
+                <input id="advantage" value="懂 AI 工具，也能把方法拆成普通人能执行的步骤" />
+              </label>
+            </div>
+            <label class="full-input">
+              不想做的内容
+              <textarea id="avoidance" rows="3">不做空泛鸡汤，不堆工具名，不做夸张收益承诺。</textarea>
+            </label>
+          </section>
+
+          <section class="panel profile-summary">
+            <div>
+              <p class="eyebrow">IP 档案摘要</p>
+              <h2 id="personaTitle">职场效率研究所</h2>
+              <p id="personaSummary">
+                一个面向职场人的效率陪跑型账号，用清晰步骤和真实案例帮助普通人提升工作效率和收入可能性。
+              </p>
+            </div>
+            <div class="persona-points" id="personaPoints"></div>
+          </section>
+        </section>
+
+        <section class="view" id="discover">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Step 02</p>
+                <h2>根据 IP 档案推荐选题方向</h2>
+              </div>
+              <button class="ghost-action" id="refreshRecommendationsBtn">刷新推荐</button>
+            </div>
+            <div class="direction-grid" id="directionList"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">抖音爆款参考</p>
+                <h2>高播放、高涨粉内容拆解</h2>
+              </div>
+            </div>
+            <div class="hot-list" id="hotList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="pool">
+          <section class="split-layout">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Step 03</p>
+                  <h2>选题池</h2>
+                </div>
+                <button class="primary-action" id="addManualTopicBtn">添加选题</button>
+              </div>
+              <div class="topic-input">
+                <input id="manualTopic" placeholder="输入你自己的选题，例如：普通人如何用 AI 做副业选品" />
+                <select id="topicCategory">
+                  <option>痛点解决</option>
+                  <option>经验故事</option>
+                  <option>工具教程</option>
+                  <option>热点借势</option>
+                  <option>转化销售</option>
+                </select>
+              </div>
+              <div class="topic-list" id="topicList"></div>
+            </div>
+
+            <aside class="panel memory-panel">
+              <p class="eyebrow">长期上下文</p>
+              <h2>选题池会影响后续文案</h2>
+              <div class="memory-block">
+                <strong>当前风格记忆</strong>
+                <p id="styleMemory">偏实用、步骤化、少夸张承诺，适合做可收藏的短视频脚本。</p>
+              </div>
+              <div class="memory-block">
+                <strong>选题结构</strong>
+                <div class="category-stack" id="categoryStack"></div>
+              </div>
+            </aside>
+          </section>
+        </section>
+
+        <section class="view" id="writer">
+          <section class="panel import-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">历史内容学习</p>
+                <h2>导入你过去写过的文案，拆解风格并反推选题</h2>
+              </div>
+              <button class="ghost-action" id="analyzeImportBtn">拆解历史文案</button>
+            </div>
+            <label class="full-input no-margin">
+              粘贴一组完整内容
+              <textarea id="importedContent" rows="8" placeholder="把你过去发布过的口播稿、小红书文案、公众号开头等直接粘贴进来。可以一次粘贴多条，中间用空行隔开。"></textarea>
+            </label>
+            <div class="import-results" id="importInsights"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Step 04</p>
+                <h2>从选题池生成完整文案</h2>
+              </div>
+              <button class="primary-action" id="generateScriptBtn">生成文案</button>
+            </div>
+            <div class="writer-toolbar">
+              <label>
+                选择选题
+                <select id="writerTopicSelect"></select>
+              </label>
+              <label>
+                输出形式
+                <select id="scriptFormat">
+                  <option>短视频口播稿</option>
+                  <option>小红书图文</option>
+                  <option>公众号开头+大纲</option>
+                </select>
+              </label>
+            </div>
+            <label class="full-input">
+              可编辑文案
+              <textarea id="scriptEditor" rows="14"></textarea>
+            </label>
+            <div class="action-row">
+              <button class="ghost-action" id="saveStyleBtn">保存为风格样本</button>
+              <button class="ghost-action" id="convertPlatformsBtn">生成平台版本</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">平台改写</p>
+                <h2>同一选题的多平台版本</h2>
+              </div>
+            </div>
+            <div class="platform-grid" id="platformVersions"></div>
+          </section>
+        </section>
+
+        <section class="view" id="analytics">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">抖音数据复盘</p>
+                <h2>粘贴创作者服务中心数据，AI 给出增长建议</h2>
+              </div>
+              <button class="primary-action" id="syncDouyinBtn">AI 复盘数据</button>
+            </div>
+            <div class="douyin-sync">
+              <label>
+                抖音账号
+                <input id="douyinAccount" value="@职场效率研究所" />
+              </label>
+              <div class="sync-status" id="syncStatus">先登录抖音创作者服务中心，把最近 7 天关键数据复制到下方，IP智脑会做复盘建议。</div>
+            </div>
+            <label class="full-input">
+              创作者服务中心数据
+              <textarea id="douyinRawData" rows="6" placeholder="示例：近 7 天总播放 12.6 万，新增粉丝 380，内容收入 96 元。视频 A 播放 3.2 万、涨粉 120、完播 38%、互动 6.8%。"></textarea>
+            </label>
+            <div class="douyin-metrics" id="douyinMetrics"></div>
+            <div class="douyin-videos" id="douyinVideoList"></div>
+            <div class="diagnosis" id="diagnosis"></div>
+          </section>
+        </section>
+
+        <section class="view" id="billing">
+          <section class="panel pricing">
+            <div>
+              <p class="eyebrow">订阅方案</p>
+              <h2>建议首版按月收费</h2>
+              <p class="price">¥9.9 <span>/ 月</span></p>
+              <p class="price-note">卖点集中在持续选题、爆款拆解、风格沉淀和文案提效。</p>
+            </div>
+            <div class="pricing-list">
+              <span>每月 300 次选题推荐</span>
+              <span>每月 100 次文案生成</span>
+              <span>抖音爆款参考与改写</span>
+              <span>长期选题池和风格记忆</span>
+              <span>视频数据复盘建议</span>
+            </div>
+            <button class="primary-action wide" id="checkoutBtn">接入支付后启用</button>
+            <p class="checkout-note" id="checkoutNote"></p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
